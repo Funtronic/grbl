@@ -34,8 +34,12 @@
 // NOTE: OEMs can avoid the need to maintain/update the defaults.h and cpu_map.h files and use only
 // one configuration file by placing their specific defaults and pin map at the bottom of this file.
 // If doing so, simply comment out these two defines and see instructions below.
-#define DEFAULTS_GENERIC
-#define CPU_MAP_ATMEGA328P // Arduino Uno CPU
+#define DEFAULTS_SHAPEOKO
+
+// PIN MAPPING REDEFINED FOR R2DEV BOARD SEE CPU_MAP.H
+//#define CPU_MAP_ATMEGA328P // Arduino Uno CPU
+#define CPU_MAP_ATMEGA644P
+
 
 // Serial baud rate
 // #define BAUD_RATE 230400

@@ -31,6 +31,9 @@ static char line[LINE_BUFFER_SIZE]; // Line to be executed. Zero-terminated.
 
 static void protocol_exec_rt_suspend();
 
+system_t sys;
+static void process_LEDS(void);
+
 
 /*
   GRBL PRIMARY LOOP:
@@ -150,6 +153,7 @@ void protocol_main_loop()
 
       }
     }
+    process_LEDS();
 
     // If there are no more characters in the serial read buffer to be processed and executed,
     // this indicates that g-code streaming has either filled the planner buffer or has
@@ -161,6 +165,28 @@ void protocol_main_loop()
   }
 
   return; /* Never reached */
+}
+
+void process_LEDS(void){
+  static int cptR=0, cptG=0;
+
+   // LEDR blinks when STATE_ALARM
+   if (sys.state == STATE_ALARM) {
+     if(++cptR>LED_PERIOD){
+       LED_PORT |= (1<<LEDR);
+       if(cptR>LED_PERIOD*2) cptR=0;
+     }
+   }else{
+     LED_PORT &= ~(1<<LEDR);
+   }
+
+   // LEDG always blinks
+   if(++cptG>LED_PERIOD){
+     LED_PORT |= (1<<LEDG);
+     if(cptG>LED_PERIOD*2) cptG=0;
+   }else{
+     LED_PORT &= ~(1<<LEDG);
+ }
 }
 
 
