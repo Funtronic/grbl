@@ -27,6 +27,17 @@
 
 #ifndef defaults_h
 
+#ifdef DEFAULTS_4_AXIS
+  // Grbl generic settings for an optional 4th axis.
+  #define MICROSTEPS_C 8
+  #define STEP_REVS_C 200 // TODO: adjust this seting to the stepper used
+  #define MM_PER_REV_C 1  // TODO: adjust this seting to the stepper used
+  #define DEFAULT_C_STEPS_PER_MM (MICROSTEPS_C*STEP_REVS_C/MM_PER_REV_C)
+  #define DEFAULT_C_MAX_RATE 1000.0 // mm/min
+  #define DEFAULT_C_ACCELERATION (15.0*60*60) // 15*60*60 mm/min^2 = 15 mm/sec^2
+  #define DEFAULT_C_MAX_TRAVEL 200.0 // mm NOTE: Must be a positive value.
+#endif
+
 #ifdef DEFAULTS_GENERIC
   // Grbl generic default settings. Should work across different machines.
   #define DEFAULT_X_STEPS_PER_MM 250.0

@@ -34,7 +34,8 @@
 // NOTE: OEMs can avoid the need to maintain/update the defaults.h and cpu_map.h files and use only
 // one configuration file by placing their specific defaults and pin map at the bottom of this file.
 // If doing so, simply comment out these two defines and see instructions below.
-#define DEFAULTS_SHAPEOKO
+#define DEFAULTS_4_AXIS
+#define DEFAULTS_SHAPEOKO // Still use all the other SHAPEOKO settings
 
 // PIN MAPPING REDEFINED FOR R2DEV BOARD SEE CPU_MAP.H
 //#define CPU_MAP_ATMEGA328P // Arduino Uno CPU

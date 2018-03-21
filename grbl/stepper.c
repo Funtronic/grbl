@@ -97,7 +97,8 @@ typedef struct {
   // Used by the bresenham line algorithm
   uint32_t counter_x,        // Counter variables for the bresenham line tracer
            counter_y,
-           counter_z;
+           counter_z,
+           counter_c;        // 4th axis
   #ifdef STEP_PULSE_DELAY
     uint8_t step_bits;  // Stores out_bits output to complete the step pulse delay
   #endif
@@ -311,12 +312,16 @@ ISR(TIMER1_COMPA_vect)
 
   // Set the direction pins a couple of nanoseconds before we step the steppers
   DIRECTION_PORT = (DIRECTION_PORT & ~DIRECTION_MASK) | (st.dir_outbits & DIRECTION_MASK);
+  // Dirty hack because the 4th axis is on a different port on Funtronic board
+  C_STEPDIR_PORT = (C_STEPDIR_PORT & ~C_DIRECTION_MASK) | (DIRECTION_PORT & C_DIRECTION_MASK);
 
   // Then pulse the stepping pins
   #ifdef STEP_PULSE_DELAY
     st.step_bits = (STEP_PORT & ~STEP_MASK) | st.step_outbits; // Store out_bits to prevent overwriting.
   #else  // Normal operation
     STEP_PORT = (STEP_PORT & ~STEP_MASK) | st.step_outbits;
+    // Dirty hack because the 4th axis is on a different port on Funtronic board
+    C_STEPDIR_PORT = (C_STEPDIR_PORT & ~C_STEP_MASK) | (STEP_PORT & C_STEP_MASK);
   #endif
 
   // Enable step pulse reset timer so that The Stepper Port Reset Interrupt can reset the signal after
@@ -350,7 +355,7 @@ ISR(TIMER1_COMPA_vect)
         st.exec_block = &st_block_buffer[st.exec_block_index];
 
         // Initialize Bresenham line and distance counters
-        st.counter_x = st.counter_y = st.counter_z = (st.exec_block->step_event_count >> 1);
+        st.counter_x = st.counter_y = st.counter_z = st.counter_c = (st.exec_block->step_event_count >> 1);
       }
       st.dir_outbits = st.exec_block->direction_bits ^ dir_port_invert_mask;
 
@@ -359,6 +364,7 @@ ISR(TIMER1_COMPA_vect)
         st.steps[X_AXIS] = st.exec_block->steps[X_AXIS] >> st.exec_segment->amass_level;
         st.steps[Y_AXIS] = st.exec_block->steps[Y_AXIS] >> st.exec_segment->amass_level;
         st.steps[Z_AXIS] = st.exec_block->steps[Z_AXIS] >> st.exec_segment->amass_level;
+        st.steps[C_AXIS] = st.exec_block->steps[C_AXIS] >> st.exec_segment->amass_level;
       #endif
 
       #ifdef VARIABLE_SPINDLE
@@ -419,6 +425,17 @@ ISR(TIMER1_COMPA_vect)
     if (st.exec_block->direction_bits & (1<<Z_DIRECTION_BIT)) { sys_position[Z_AXIS]--; }
     else { sys_position[Z_AXIS]++; }
   }
+  #ifdef ADAPTIVE_MULTI_AXIS_STEP_SMOOTHING
+    st.counter_c += st.steps[C_AXIS];
+  #else
+    st.counter_c += st.exec_block->steps[C_AXIS];
+  #endif  
+  if (st.counter_c > st.exec_block->step_event_count) {
+    st.step_outbits |= (1<<C_STEP_BIT);
+    st.counter_c -= st.exec_block->step_event_count;
+    if (st.exec_block->direction_bits & (1<<C_DIRECTION_BIT)) { sys_position[C_AXIS]--; }
+    else { sys_position[C_AXIS]++; }
+  }
 
   // During a homing cycle, lock out and prevent desired axes from moving.
   if (sys.state == STATE_HOMING) { st.step_outbits &= sys.homing_axis_lock; }
@@ -450,6 +467,8 @@ ISR(TIMER0_OVF_vect)
 {
   // Reset stepping pins (leave the direction pins)
   STEP_PORT = (STEP_PORT & ~STEP_MASK) | (step_port_invert_mask & STEP_MASK);
+  // Dirty hack because the 4th axis is on a different port on Funtronic board
+  C_STEPDIR_PORT = (C_STEPDIR_PORT & ~C_STEP_MASK) | (STEP_PORT & C_STEP_MASK);
   TCCR0B = 0; // Disable Timer0 to prevent re-entering this interrupt when it's not needed.
 }
 #ifdef STEP_PULSE_DELAY
@@ -461,6 +480,8 @@ ISR(TIMER0_OVF_vect)
   ISR(TIMER0_COMPA_vect)
   {
     STEP_PORT = st.step_bits; // Begin step pulse.
+    // Dirty hack because the 4th axis is on a different port on Funtronic board
+    C_STEPDIR_PORT = (C_STEPDIR_PORT & ~C_STEP_MASK) | (STEP_PORT & C_STEP_MASK);
   }
 #endif
 
@@ -500,6 +521,11 @@ void st_reset()
   // Initialize step and direction port pins.
   STEP_PORT = (STEP_PORT & ~STEP_MASK) | step_port_invert_mask;
   DIRECTION_PORT = (DIRECTION_PORT & ~DIRECTION_MASK) | dir_port_invert_mask;
+
+  // Dirty hack because the 4th axis is on a different port on Funtronic board
+  C_STEPDIR_PORT = (C_STEPDIR_PORT & ~C_STEP_MASK) | (STEP_PORT & C_STEP_MASK);
+  C_STEPDIR_PORT = (C_STEPDIR_PORT & ~C_DIRECTION_MASK) | (DIRECTION_PORT & C_DIRECTION_MASK);
+
 }
 
 
@@ -510,6 +536,9 @@ void stepper_init()
   STEP_DDR |= STEP_MASK;
   STEPPERS_DISABLE_DDR |= 1<<STEPPERS_DISABLE_BIT;
   DIRECTION_DDR |= DIRECTION_MASK;
+
+  C_STEPDIR_DDR |= C_STEP_MASK | C_DIRECTION_MASK;
+
 
   // Configure Timer 1: Stepper Driver Interrupt
   TCCR1B &= ~(1<<WGM13); // waveform generation = 0100 = CTC

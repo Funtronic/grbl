@@ -67,6 +67,7 @@
   #else
     #define Z_LIMIT_BIT    3  // Uno Digital Pin 11
   #endif
+  #define C_LIMIT_BIT      3 // Not used on Futronic board
   #define LIMIT_MASK       ((1<<X_LIMIT_BIT)|(1<<Y_LIMIT_BIT)|(1<<Z_LIMIT_BIT)) // All limit bits
   #define LIMIT_INT        PCIE0  // Pin change interrupt enable pin
   #define LIMIT_INT_vect   PCINT0_vect
@@ -103,9 +104,9 @@
 
   // Define user-control controls (cycle start, reset, feed hold) input pins.
   // NOTE: All CONTROLs pins must be on the same port and not on a port with other input pins (limits).
-  #define CONTROL_DDR       DDRC
-  #define CONTROL_PIN       PINC
-  #define CONTROL_PORT      PORTC
+  #define CONTROL_DDR       DDRA
+  #define CONTROL_PIN       PINA
+  #define CONTROL_PORT      PORTA
   #define CONTROL_RESET_BIT         0  // Uno Analog Pin 0
   #define CONTROL_FEED_HOLD_BIT     1  // Uno Analog Pin 1
   #define CONTROL_CYCLE_START_BIT   2  // Uno Analog Pin 2
@@ -125,15 +126,22 @@
 
 
 // FUNTRONIC CNC LEDS
-#define LED_PERIOD 100
-#define LED_DDR   DDRC
-#define LED_PORT  PORTC
-#define LEDR   3 //RED LED
-#define LED1   4
-#define LED2   5
-#define LED3   6
-#define LEDG   7 //GREEN LED
-#define LED_MASK ((1<<LEDR)|(1<<LED1)|(1<<LED2)|(1<<LED3)|(1<<LEDG))
+ #define LED_PERIOD 100
+ #define LED_DDR   DDRC
+ #define LED_PORT  PORTC
+ #define LEDR   3 //RED LED
+ #define LED1   4
+ #define LED2   5
+ #define LED3   6
+ #define LEDG   7 //GREEN LED
+ #define LED_MASK ((1<<LEDR)|(1<<LED1)|(1<<LED2)|(1<<LED3)|(1<<LEDG))
+
+ #define C_STEPDIR_DDR   DDRC
+ #define C_STEPDIR_PORT  PORTC
+ #define C_STEP_BIT       1
+ #define C_DIRECTION_BIT  0
+ #define C_STEP_MASK       (1<<C_STEP_BIT)
+ #define C_DIRECTION_MASK  (1<<C_DIRECTION_BIT)
 
   // Variable spindle configuration below. Do not change unless you know what you are doing.
   // NOTE: Only used when variable spindle is enabled.
